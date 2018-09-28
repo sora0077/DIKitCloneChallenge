@@ -1,0 +1,25 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "SwiftPM",
+        "repositoryURL": "https://github.com/apple/swift-package-manager",
+        "state": {
+          "branch": "master",
+          "revision": "077a6aa7830a050d58111adb89b54b72f027c9af",
+          "version": null
+        }
+      },
+      {
+        "package": "SwiftSyntax",
+        "repositoryURL": "https://github.com/apple/swift-syntax",
+        "state": {
+          "branch": "0.40200.0",
+          "revision": "f20c0bcbfb4b07e107c9851350217cb2217f0cb4",
+          "version": null
+        }
+      }
+    ]
+  },
+  "version": 1
+}
