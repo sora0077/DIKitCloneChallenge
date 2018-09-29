@@ -21,7 +21,7 @@ func print(
 
 enum Mode {
     case version
-    case generate(path: AbsolutePath, excluding: [AbsolutePath])
+    case generate(path: AbsolutePath, exclusions: [AbsolutePath])
 }
 
 // swiftlint:disable:next function_body_length
@@ -95,7 +95,7 @@ func mode(from args: [String]) throws -> Mode {
         return .version
 
     case .generate:
-        return .generate(path: options.inputDirectory!, excluding: options.exclusions ?? [])
+        return .generate(path: options.inputDirectory!, exclusions: options.exclusions ?? [])
     }
 }
 
@@ -105,8 +105,9 @@ do {
     case .version:
         print(Version.current, to: &stdoutStream)
 
-    case .generate(let path, let excluding):
-        print(path, excluding, to: &stdoutStream)
+    case .generate(let path, let exclusions):
+        let output = try CodeGenerator(path: path, exclusions: exclusions).generate()
+        print(output, to: &stdoutStream)
     }
 
 } catch {
