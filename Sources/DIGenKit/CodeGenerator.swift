@@ -14,11 +14,7 @@ public class CodeGenerator {
     let targetFiles: [SourceFileSyntax]
 
     public convenience init(path: AbsolutePath, exclusions: [AbsolutePath] = []) throws {
-        try self.init(path: path, exclusions: exclusions, in: localFileSystem)
-    }
-
-    convenience init(path: AbsolutePath, exclusions: [AbsolutePath] = [], in filesystem: FileSystem) throws {
-        try self.init(files: files(atPath: path, exclusions: exclusions, in: filesystem))
+        try self.init(files: files(atPath: path, exclusions: exclusions))
     }
 
     public init(files: [AbsolutePath]) throws {
@@ -32,21 +28,18 @@ public class CodeGenerator {
     }
 }
 
-private func files(
-    atPath path: AbsolutePath,
-    exclusions: [AbsolutePath],
-    in filesystem: FileSystem) throws -> [AbsolutePath] {
+private func files(atPath path: AbsolutePath, exclusions: [AbsolutePath]) throws -> [AbsolutePath] {
 
-    if filesystem.exists(path) {
-        if filesystem.isDirectory(path) {
-            return try walk(path, fileSystem: filesystem).filter { file in
+    if localFileSystem.exists(path) {
+        if localFileSystem.isDirectory(path) {
+            return try walk(path).filter { file in
                 guard file.extension == "swift" else { return false }
                 for exclude in exclusions where file.contains(exclude) {
                     return false
                 }
                 return true
             }
-        } else if filesystem.isFile(path) {
+        } else if localFileSystem.isFile(path) {
             return [path]
         }
     }
