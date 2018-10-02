@@ -28,6 +28,6 @@ func targetDirectory() -> AbsolutePath {
     return AbsolutePath(#file).parentDirectory.appending(component: "Inputs")
 }
 
-private extension AbsolutePath {
+extension AbsolutePath {
     var asURL: URL { return URL(fileURLWithPath: asString) }
 }
