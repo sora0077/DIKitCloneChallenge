@@ -27,6 +27,10 @@ extension VariableDeclSyntax {
     var helper: SyntaxHelper<VariableDeclSyntax> { return SyntaxHelper(base: self) }
 }
 
+extension FunctionDeclSyntax {
+    var helper: SyntaxHelper<FunctionDeclSyntax> { return SyntaxHelper(base: self) }
+}
+
 // MARK: -
 extension SyntaxHelper where T == TypeSyntax {
 
@@ -108,6 +112,13 @@ extension SyntaxHelper where T == DeclSyntax {
             assertionFailure("\(base)")
             return nil
         }
+    }
+}
+
+extension SyntaxHelper where T == FunctionDeclSyntax {
+
+    var isStatic: Bool {
+        return base.modifiers?.contains(where: { $0.name.text == "static" }) ?? false
     }
 }
 

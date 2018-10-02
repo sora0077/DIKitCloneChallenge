@@ -50,8 +50,13 @@ struct ProviderMethod {
             return nil
         }
 
-        guard decl.signature.output?.returnType.helper.name?.text != "Void" else {
+        guard let returnType = decl.signature.output?.returnType,
+            returnType.helper.name?.text != "Void" else {
             throw error(.returnTypeNotFound)
+        }
+
+        guard !decl.helper.isStatic else {
+            throw error(.nonInstanceMethod)
         }
 
         self.decl = decl

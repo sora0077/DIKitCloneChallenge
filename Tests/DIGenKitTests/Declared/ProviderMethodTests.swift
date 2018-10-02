@@ -53,7 +53,81 @@ final class ProviderMethodTests: XCTestCase {
         XCTAssertEqual(method?.decl.signature.input.parameterList.array[1].type?.helper.name?.text, "C")
     }
 
+    func testMissingReturnType() throws {
+        let tempDir = try temporaryDirectory()
+        let file = try makeFile("Foo.swift", in: tempDir) {
+            """
+            protocol Test: Resolver {
+                func provideA(b: B, c: C)
+            }
+            """
+        }
+
+        class Collector: SyntaxVisitor {
+            var protocols = Set<ProtocolDeclSyntax>()
+
+            override func visit(_ node: ProtocolDeclSyntax) {
+                protocols.insert(node)
+                super.visit(node)
+            }
+        }
+
+        let collector = Collector()
+        try collector.visit(SyntaxTreeParser.parse(file.asURL))
+
+        XCTAssertEqual(collector.protocols.count, 1)
+
+        let decl = collector.protocols.removeFirst()
+
+        do {
+            _ = try ProviderMethod.providerMethods(in: decl)
+            XCTFail()
+        } catch let error as ProviderMethod.Error {
+            XCTAssertEqual(error.reason, .returnTypeNotFound)
+        } catch {
+            XCTFail()
+        }
+    }
+
+    func testStatic() throws {
+        let tempDir = try temporaryDirectory()
+        let file = try makeFile("Foo.swift", in: tempDir) {
+            """
+            protocol Test: Resolver {
+                static func provideA(b: B, c: C) -> A
+            }
+            """
+        }
+
+        class Collector: SyntaxVisitor {
+            var protocols = Set<ProtocolDeclSyntax>()
+
+            override func visit(_ node: ProtocolDeclSyntax) {
+                protocols.insert(node)
+                super.visit(node)
+            }
+        }
+
+        let collector = Collector()
+        try collector.visit(SyntaxTreeParser.parse(file.asURL))
+
+        XCTAssertEqual(collector.protocols.count, 1)
+
+        let decl = collector.protocols.removeFirst()
+
+        do {
+            _ = try ProviderMethod.providerMethods(in: decl)
+            XCTFail()
+        } catch let error as ProviderMethod.Error {
+            XCTAssertEqual(error.reason, .nonInstanceMethod)
+        } catch {
+            XCTFail()
+        }
+    }
+
     static var allTests = [
-        ("test", test)
+        ("test", test),
+        ("testMissingReturnType", testMissingReturnType),
+        ("testStatic", testStatic)
     ]
 }
