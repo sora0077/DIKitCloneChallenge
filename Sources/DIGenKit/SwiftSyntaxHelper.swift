@@ -45,6 +45,9 @@ extension SyntaxHelper where T == TypeSyntax {
         case let base as OptionalTypeSyntax:
             return base.wrappedType.helper.name
 
+        case let base as ImplicitlyUnwrappedOptionalTypeSyntax:
+            return base.wrappedType.helper.name
+
         default:
             assertionFailure("\(base)")
             return nil
@@ -52,7 +55,11 @@ extension SyntaxHelper where T == TypeSyntax {
     }
 
     var isOptional: Bool {
-        return base is OptionalTypeSyntax
+        return base is OptionalTypeSyntax || isImplicitlyUnwrappedOptional
+    }
+
+    var isImplicitlyUnwrappedOptional: Bool {
+        return base is ImplicitlyUnwrappedOptionalTypeSyntax
     }
 }
 

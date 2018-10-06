@@ -360,9 +360,208 @@ final class InjectableTests: XCTestCase {
         }
     }
 
+    func testPropertyInjectable() throws {
+        class Collector: SyntaxVisitor {
+            var nodes = [Declared.Injectable.Property]()
+            var errors = [Error]()
+
+            override func visit(_ node: ClassDeclSyntax) {
+                super.visit(node)
+                addIfNeeded(node)
+            }
+
+            override func visit(_ node: EnumDeclSyntax) {
+                super.visit(node)
+                addIfNeeded(node)
+            }
+
+            override func visit(_ node: StructDeclSyntax) {
+                super.visit(node)
+                addIfNeeded(node)
+            }
+
+            private func addIfNeeded(_ node: DeclSyntax) {
+                do {
+                    if let injectable = try Declared.Injectable.Property(decl: node) {
+                        nodes.append(injectable)
+                    }
+                } catch {
+                    errors.append(error)
+                }
+            }
+        }
+
+        do {
+            let tempDir = try temporaryDirectory()
+            let collector = Collector()
+            collector.visit(try makeSourceSyntax("Foo.swift", in: tempDir) {
+                """
+                class User: PropertyInjectable {
+                    struct Dependency {
+                        let userId: Int
+                        let optUserId: Int?
+                        static var currentUser: User?
+                    }
+
+                    var dependency: Dependency!
+                }
+                struct User: PropertyInjectable {
+                    struct Dependency {
+                        let userId: Int
+                        let optUserId: Int?
+                        static var currentUser: User?
+                    }
+
+                    var dependency: Dependency!
+                }
+                enum User: PropertyInjectable {
+                    struct Dependency {
+                        let userId: Int
+                        let optUserId: Int?
+                        static var currentUser: User?
+                    }
+
+                    var dependency: Dependency!
+                }
+                struct User {
+                    struct Dependency {
+                        let userId: Int
+                        let optUserId: Int?
+                        static var currentUser: User?
+                    }
+
+                    var dependency: Dependency!
+                }
+                """
+                })
+
+            XCTAssertEqual(collector.nodes.count, 3)
+        }
+
+        do {
+            let tempDir = try temporaryDirectory()
+            let collector = Collector()
+            collector.visit(try makeSourceSyntax("Foo.swift", in: tempDir) {
+                """
+                class User: PropertyInjectable {
+                    struct Dependency {
+                        let userId: Int
+                        let optUserId: Int?
+                        static var currentUser: User?
+                    }
+
+                    var dependency: Dependency
+                }
+                """
+                })
+
+            if let error = collector.errors.first {
+                throw error
+            }
+            XCTFail()
+        } catch let error as Declared.Injectable.Property.Error where error.reason == .propertyNotFound {
+            XCTAssert(true)
+        }
+
+        do {
+            let tempDir = try temporaryDirectory()
+            let collector = Collector()
+            collector.visit(try makeSourceSyntax("Foo.swift", in: tempDir) {
+                """
+                class User: PropertyInjectable {
+                    struct Dependency {
+                        let userId: Int
+                        let optUserId: Int?
+                        static var currentUser: User?
+                    }
+
+                    var dependency: Dependency! { fatalError() }
+                }
+                """
+                })
+
+            if let error = collector.errors.first {
+                throw error
+            }
+            XCTFail()
+        } catch let error as Declared.Injectable.Property.Error where error.reason == .propertyNotFound {
+            XCTAssert(true)
+        }
+
+        do {
+            let tempDir = try temporaryDirectory()
+            let collector = Collector()
+            collector.visit(try makeSourceSyntax("Foo.swift", in: tempDir) {
+                """
+                class User: PropertyInjectable {
+                    struct Dependency {
+                        let userId: Int
+                        let optUserId: Int?
+                        static var currentUser: User?
+                    }
+                }
+
+                extension User {
+                    var dependency: Dependency! { fatalError() }
+                }
+                """
+                })
+
+            if let error = collector.errors.first {
+                throw error
+            }
+            XCTFail()
+        } catch let error as Declared.Injectable.Property.Error where error.reason == .propertyNotFound {
+            XCTAssert(true)
+        }
+
+        do {
+            let tempDir = try temporaryDirectory()
+            let collector = Collector()
+            collector.visit(try makeSourceSyntax("Foo.swift", in: tempDir) {
+                """
+                class User: PropertyInjectable {
+                    struct Dependency {
+                        let userId: Int
+                        let optUserId: Int?
+                        static var currentUser: User?
+                    }
+
+                    var dependency: Int!
+                }
+                """
+                })
+
+            if let error = collector.errors.first {
+                throw error
+            }
+            XCTFail()
+        } catch let error as Declared.Injectable.Property.Error where error.reason == .propertyNotFound {
+            XCTAssert(true)
+        }
+
+        do {
+            let tempDir = try temporaryDirectory()
+            let collector = Collector()
+            collector.visit(try makeSourceSyntax("Foo.swift", in: tempDir) {
+                """
+                class User: PropertyInjectable {}
+                """
+                })
+
+            if let error = collector.errors.first {
+                throw error
+            }
+            XCTFail()
+        } catch let error as Declared.Injectable.Property.Error where error.reason == .associatedTypeNotFound {
+            XCTAssert(true)
+        }
+    }
+
     static var allTests = [
         ("testDependency", testDependency),
         ("testInitializerInjectable", testInitializerInjectable),
-        ("testFactoryInjectable", testFactoryInjectable)
+        ("testFactoryInjectable", testFactoryInjectable),
+        ("testPropertyInjectable", testPropertyInjectable)
     ]
 }
