@@ -1,5 +1,6 @@
 import Foundation
 import Basic
+import SwiftSyntax
 
 func getInput(_ file: String) -> URL {
     var dir = targetDirectory()
@@ -18,6 +19,10 @@ func makeFile(_ file: String, in dir: TemporaryDirectory, content: () -> String)
     })
 
     return filePath
+}
+
+func makeSourceSyntax(_ file: String, in dir: TemporaryDirectory, content: () -> String) throws -> SourceFileSyntax {
+    return try SyntaxTreeParser.parse(makeFile(file, in: dir, content: content).asURL)
 }
 
 func temporaryDirectory() throws -> TemporaryDirectory {

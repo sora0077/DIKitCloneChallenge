@@ -115,8 +115,7 @@ extension Declared.Injectable {
         init?(members: DeclListSyntax?) throws {
             func parseMemberType(_ member: DeclSyntax) throws -> Declared.SwiftType? {
                 guard let member = member as? VariableDeclSyntax else { return nil }
-                if member.helper.isStatic { return nil }
-                if member.helper.isComputed { return nil }
+                if member.helper.isStatic || member.helper.isComputed { return nil }
 
                 if member.helper.hasInitializer {
                     throw Error.cannotConstructAssoicatedType

@@ -25,7 +25,8 @@ final class InjectableTests: XCTestCase {
 
         do {
             let tempDir = try temporaryDirectory()
-            let file = try makeFile("Foo.swift", in: tempDir) {
+            let collector = Collector()
+            collector.visit(try makeSourceSyntax("Foo.swift", in: tempDir) {
                 """
                 class User: Injectable {
                     struct Dependency {
@@ -35,10 +36,7 @@ final class InjectableTests: XCTestCase {
                     }
                 }
                 """
-            }
-
-            let collector = Collector()
-            try collector.visit(SyntaxTreeParser.parse(file.asURL))
+            })
 
             let d = try Declared.Injectable.Dependency(members: collector.nodes.first?.helper.members?.members)
 
@@ -47,7 +45,8 @@ final class InjectableTests: XCTestCase {
 
         do {
             let tempDir = try temporaryDirectory()
-            let file = try makeFile("Foo.swift", in: tempDir) {
+            let collector = Collector()
+            collector.visit(try makeSourceSyntax("Foo.swift", in: tempDir) {
                 """
                 class User: Injectable {
                     struct Dependency {
@@ -58,13 +57,11 @@ final class InjectableTests: XCTestCase {
                     }
                 }
                 """
-            }
+            })
 
-            let collector = Collector()
-            try collector.visit(SyntaxTreeParser.parse(file.asURL))
-
-            _ = try Declared.Injectable.Dependency(members: collector.nodes.first?.helper.members?.members)
-            XCTFail()
+            XCTAssertThrowsError(
+                try Declared.Injectable.Dependency(members: collector.nodes.first?.helper.members?.members)
+            )
         } catch Declared.Injectable.Dependency.Error.cannotConstructAssoicatedType {
             XCTAssert(true)
         }
