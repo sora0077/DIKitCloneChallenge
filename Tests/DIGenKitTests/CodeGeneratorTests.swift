@@ -43,8 +43,6 @@ final class CodeGeneratorTests: XCTestCase {
 
         let generator = try CodeGenerator(path: tempDir.path)
         _ = try generator.generate()
-
-        XCTAssertEqual(generator.targetFiles.count, 1)
     }
 
     static var allTests = [

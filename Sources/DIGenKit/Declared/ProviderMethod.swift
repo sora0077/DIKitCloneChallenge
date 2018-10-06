@@ -8,10 +8,9 @@
 import Foundation
 import SwiftSyntax
 
-struct ProviderMethod {
+struct ProviderMethod: Hashable {
     struct Error: LocalizedError {
         enum Reason {
-            case nonResolverTypeMethod
             case returnTypeNotFound
             case nonInstanceMethod
             case nonMethod
@@ -22,8 +21,6 @@ struct ProviderMethod {
 
         var errorDescription: String? {
             switch reason {
-            case .nonResolverTypeMethod:
-                return "Type does not conform to 'Resolver' protocol"
             case .returnTypeNotFound:
                 return "Provide method must return non-void type"
             case .nonInstanceMethod:
@@ -64,17 +61,13 @@ struct ProviderMethod {
 
     static func providerMethods(in decl: ProtocolDeclSyntax) throws -> [ProviderMethod] {
 
-        func checkProtocolConformance(_ collection: InheritedTypeListSyntax?) throws {
-            let found = collection?.contains(where: {
-                $0.typeName.helper.name?.text == "Resolver"
-            }) ?? false
+        let found = decl.helper.inheritanceClause?.inheritedTypeCollection.contains(where: {
+            $0.typeName.helper.name?.text == "Resolver"
+        }) ?? false
 
-            if !found {
-                throw Error(decl: decl, reason: .nonResolverTypeMethod)
-            }
+        if !found {
+            return []
         }
-
-        try checkProtocolConformance(decl.helper.inheritanceClause?.inheritedTypeCollection)
 
         return try decl.members.members.compactMap(ProviderMethod.init(decl:))
     }

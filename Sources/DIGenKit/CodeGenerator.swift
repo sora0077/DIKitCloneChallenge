@@ -29,7 +29,7 @@ public class CodeGenerator {
         targetFiles.forEach(collector.visit)
 
         print(collector.imports)
-        print(collector.resolvers)
+        print(collector.providers)
 
         print(collector.extensions)
 
@@ -76,9 +76,11 @@ private class DIKitImportVisitor: SyntaxVisitor {
 
 private class ResolverCollectVisitor: SyntaxVisitor {
 
+    let diagnosticEngine = DiagnosticEngine()
+
     private(set) var imports = Set<ImportDeclSyntax>()
 
-    private(set) var resolvers = Set<ProtocolDeclSyntax>()
+    private(set) var providers = Set<ProviderMethod>()
 
     private(set) var extensions = Set<ExtensionDeclSyntax>()
 
@@ -96,12 +98,6 @@ private class ResolverCollectVisitor: SyntaxVisitor {
 
     override func visit(_ node: StructDeclSyntax) {
 
-        do {
-            let type = try InitializerInjectableType(decl: node)
-        } catch {
-
-        }
-
         super.visit(node)
     }
 
@@ -116,43 +112,10 @@ private class ResolverCollectVisitor: SyntaxVisitor {
     }
 
     override func visit(_ node: ProtocolDeclSyntax) {
-
-        _ = try? ProviderMethod.providerMethods(in: node)
-
-        let found = node.inheritanceClause?.inheritedTypeCollection.contains(where: {
-            switch $0.typeName {
-            case let typeName as SimpleTypeIdentifierSyntax:
-                return typeName.name.text == "Resolver"
-            case let typeName as MemberTypeIdentifierSyntax:
-                return typeName.name.text == "Resolver"
-            default:
-                return false
-            }
-        })
-
-        if found ?? false {
-            resolvers.insert(SyntaxFactory.makeProtocolDecl(
-                attributes: node.attributes,
-                modifiers: node.modifiers,
-                protocolKeyword: node.protocolKeyword,
-                identifier: node.identifier,
-                inheritanceClause: node.inheritanceClause,
-                genericWhereClause: node.genericWhereClause,
-                members: node.members))
-
-            extensions.insert(SyntaxFactory.makeExtensionDecl(
-                attributes: nil,
-                modifiers: nil,
-                extensionKeyword: SyntaxFactory.makeExtensionKeyword().withTrailingTrivia(.spaces(1)),
-                extendedType: SyntaxFactory.makeTypeIdentifier(node.identifier.text),
-                inheritanceClause: nil,
-                genericWhereClause: nil,
-                members: SyntaxFactory.makeMemberDeclBlock(
-                    leftBrace: SyntaxFactory.makeLeftBraceToken().withLeadingTrivia(.spaces(1)),
-                    members: SyntaxFactory.makeDeclList([
-
-                    ]),
-                    rightBrace: SyntaxFactory.makeRightBraceToken())))
+        do {
+            providers.formUnion(try ProviderMethod.providerMethods(in: node))
+        } catch {
+            diagnosticEngine.diagnose(.init(.warning, "\(error)"))
         }
 
         super.visit(node)

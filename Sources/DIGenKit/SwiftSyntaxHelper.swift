@@ -42,10 +42,17 @@ extension SyntaxHelper where T == TypeSyntax {
         case let base as MemberTypeIdentifierSyntax:
             return base.name
 
+        case let base as OptionalTypeSyntax:
+            return base.wrappedType.helper.name
+
         default:
             assertionFailure("\(base)")
             return nil
         }
+    }
+
+    var isOptional: Bool {
+        return base is OptionalTypeSyntax
     }
 }
 
@@ -72,7 +79,6 @@ extension SyntaxHelper where T == DeclSyntax {
             return base.identifier
 
         default:
-            assertionFailure("\(base)")
             return nil
         }
     }
@@ -138,5 +144,9 @@ extension SyntaxHelper where T == VariableDeclSyntax {
 
     var isComputed: Bool {
         return base.bindings.contains(where: { $0.accessor != nil })
+    }
+
+    var hasInitializer: Bool {
+        return base.bindings.contains(where: { $0.initializer != nil })
     }
 }
