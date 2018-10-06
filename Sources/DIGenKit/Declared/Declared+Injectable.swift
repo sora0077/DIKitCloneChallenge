@@ -27,9 +27,23 @@ extension Declared {
             return decl.helper.members?.members.lazy
                 .compactMap { $0 as? InitializerDeclSyntax }
                 .flatMap { $0.parameters.parameterList }
-                .contains(where: { decl in
-                    return decl.firstName?.text == "dependency"
-                        && decl.type?.helper.name?.text == "Dependency"
+                .contains(where: { f in
+                    return f.firstName?.text == "dependency"
+                        && f.type?.helper.name?.text == "Dependency"
+                }) ?? false
+        }
+
+        fileprivate func hasFactory() -> Bool {
+            return decl.helper.members?.members.lazy
+                .compactMap { $0 as? FunctionDeclSyntax }
+                .contains(where: { f in
+                    let input = f.signature.input.parameterList.first
+                    let output = f.signature.output?.returnType
+
+                    return f.identifier.text == "makeInstance"
+                        && input?.firstName?.text == "dependency"
+                        && input?.type?.helper.name?.text == "Dependency"
+                        && output?.helper.name?.text == decl.helper.identifier?.text
                 }) ?? false
         }
     }
@@ -37,6 +51,7 @@ extension Declared {
 
 extension Declared.Injectable {
 
+    // MARK: -
     struct Initializer {
 
         struct Error: Swift.Error {
@@ -52,10 +67,10 @@ extension Declared.Injectable {
 
             var errorDescription: String? {
                 switch reason {
-                case .associatedTypeNotFound:
-                    return "Associated type 'Dependency' declared in 'Injectable' is not found"
                 case .initializerNotFound:
                     return "Initializer 'init(dependency:)' declared in 'Injectable' is not found"
+                case .associatedTypeNotFound:
+                    return "Associated type 'Dependency' declared in 'Injectable' is not found"
                 case .nonStructAssociatedType:
                     return "Associated type 'Dependency' must be a struct"
                 case .cannotConstructAssociatedType:
@@ -86,19 +101,57 @@ extension Declared.Injectable {
         }
     }
 
+    // MARK: -
     struct Factory {
+
+        struct Error: Swift.Error {
+            enum Reason {
+                case staticMethodNotFound
+                case associatedTypeNotFound
+                case nonStructAssociatedType
+                case cannotConstructAssociatedType
+            }
+
+            let decl: DeclSyntax
+            let reason: Reason
+
+            var errorDescription: String? {
+                switch reason {
+                case .staticMethodNotFound:
+                    return "Static method 'static makeInstance(dependency:)' declared in 'Injectable' is not found"
+                case .associatedTypeNotFound:
+                    return "Associated type 'Dependency' declared in 'Injectable' is not found"
+                case .nonStructAssociatedType:
+                    return "Associated type 'Dependency' must be a struct"
+                case .cannotConstructAssociatedType:
+                    return "Associated type 'Dependency' must be constructible"
+                }
+            }
+        }
 
         var dependency: Dependency { return injectable.dependency }
         private let injectable: Declared.Injectable
 
         init?(decl: DeclSyntax) throws {
-            guard let raw = try Declared.Injectable(decl: decl, as: "FactoryInjectable") else {
-                return nil
+            do {
+                guard let raw = try Declared.Injectable(decl: decl, as: "FactoryInjectable") else {
+                    return nil
+                }
+                guard raw.hasFactory() else {
+                    throw Error(decl: decl, reason: .staticMethodNotFound)
+                }
+                self.injectable = raw
+            } catch Dependency.Error.cannotConstruct {
+                throw Error(decl: decl, reason: .cannotConstructAssociatedType)
+            } catch Dependency.Error.notFound {
+                throw Error(decl: decl, reason: .associatedTypeNotFound)
+            } catch Dependency.Error.nonStructType {
+                throw Error(decl: decl, reason: .nonStructAssociatedType)
             }
-            self.injectable = raw
         }
     }
 
+    // MARK: -
     struct Property {
 
         var dependency: Dependency { return injectable.dependency }
@@ -113,6 +166,7 @@ extension Declared.Injectable {
     }
 }
 
+// MARK: -
 extension Declared.Injectable {
 
     struct Dependency {

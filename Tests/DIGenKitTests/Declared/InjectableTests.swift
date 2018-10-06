@@ -200,8 +200,169 @@ final class InjectableTests: XCTestCase {
         }
     }
 
+    func testFactoryInjectable() throws {
+        class Collector: SyntaxVisitor {
+            var nodes = [Declared.Injectable.Factory]()
+            var errors = [Error]()
+
+            override func visit(_ node: ClassDeclSyntax) {
+                super.visit(node)
+                addIfNeeded(node)
+            }
+
+            override func visit(_ node: EnumDeclSyntax) {
+                super.visit(node)
+                addIfNeeded(node)
+            }
+
+            override func visit(_ node: StructDeclSyntax) {
+                super.visit(node)
+                addIfNeeded(node)
+            }
+
+            private func addIfNeeded(_ node: DeclSyntax) {
+                do {
+                    if let injectable = try Declared.Injectable.Factory(decl: node) {
+                        nodes.append(injectable)
+                    }
+                } catch {
+                    errors.append(error)
+                }
+            }
+        }
+
+        do {
+            let tempDir = try temporaryDirectory()
+            let collector = Collector()
+            collector.visit(try makeSourceSyntax("Foo.swift", in: tempDir) {
+                """
+                class User: FactoryInjectable {
+                    struct Dependency {
+                        let userId: Int
+                        let optUserId: Int?
+                        static var currentUser: User?
+                    }
+
+                    static func makeInstance(dependency: Dependency) -> User {
+                        fatalError()
+                    }
+                }
+                struct User: FactoryInjectable {
+                    struct Dependency {
+                        let userId: Int
+                        let optUserId: Int?
+                        static var currentUser: User?
+                    }
+
+                    static func makeInstance(dependency: Dependency) -> User {
+                        fatalError()
+                    }
+                }
+                enum User: FactoryInjectable {
+                    struct Dependency {
+                        let userId: Int
+                        let optUserId: Int?
+                        static var currentUser: User?
+                    }
+
+                    static func makeInstance(dependency: Dependency) -> User {
+                        fatalError()
+                    }
+                }
+                struct User {
+                    struct Dependency {
+                        let userId: Int
+                        let optUserId: Int?
+                        static var currentUser: User?
+                    }
+
+                    static func makeInstance(dependency: Dependency) -> User {
+                        fatalError()
+                    }
+                }
+                """
+                })
+
+            XCTAssertEqual(collector.nodes.count, 3)
+        }
+
+        do {
+            let tempDir = try temporaryDirectory()
+            let collector = Collector()
+            collector.visit(try makeSourceSyntax("Foo.swift", in: tempDir) {
+                """
+                class User: FactoryInjectable {
+                    struct Dependency {
+                        let userId: Int
+                        let optUserId: Int?
+                        static var currentUser: User?
+                    }
+                }
+
+                extension User {
+                    static func makeInstance(dependency: Dependency) -> User {
+                        fatalError()
+                    }
+                }
+                """
+                })
+
+            if let error = collector.errors.first {
+                throw error
+            }
+            XCTFail()
+        } catch let error as Declared.Injectable.Factory.Error where error.reason == .staticMethodNotFound {
+            XCTAssert(true)
+        }
+
+        do {
+            let tempDir = try temporaryDirectory()
+            let collector = Collector()
+            collector.visit(try makeSourceSyntax("Foo.swift", in: tempDir) {
+                """
+                class User: FactoryInjectable {
+                    struct Dependency {
+                        let userId: Int
+                        let optUserId: Int?
+                        static var currentUser: User?
+                    }
+
+                    static func makeInstance(dependency: Dependency) -> Int {
+                        fatalError()
+                    }
+                }
+                """
+                })
+
+            if let error = collector.errors.first {
+                throw error
+            }
+            XCTFail()
+        } catch let error as Declared.Injectable.Factory.Error where error.reason == .staticMethodNotFound {
+            XCTAssert(true)
+        }
+
+        do {
+            let tempDir = try temporaryDirectory()
+            let collector = Collector()
+            collector.visit(try makeSourceSyntax("Foo.swift", in: tempDir) {
+                """
+                class User: FactoryInjectable {}
+                """
+                })
+
+            if let error = collector.errors.first {
+                throw error
+            }
+            XCTFail()
+        } catch let error as Declared.Injectable.Factory.Error where error.reason == .associatedTypeNotFound {
+            XCTAssert(true)
+        }
+    }
+
     static var allTests = [
         ("testDependency", testDependency),
-        ("testInitializerInjectable", testInitializerInjectable)
+        ("testInitializerInjectable", testInitializerInjectable),
+        ("testFactoryInjectable", testFactoryInjectable)
     ]
 }
