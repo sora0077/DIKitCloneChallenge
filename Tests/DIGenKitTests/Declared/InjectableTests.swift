@@ -40,7 +40,7 @@ final class InjectableTests: XCTestCase {
 
             let d = try Declared.Injectable.Dependency(members: collector.nodes.first?.helper.members?.members)
 
-            XCTAssertEqual(d?.dependedTypes.map { $0.name }, ["Int", "Int?"])
+            XCTAssertEqual(d.dependedTypes.map { $0.name }, ["Int", "Int?"])
         }
 
         do {
@@ -62,12 +62,146 @@ final class InjectableTests: XCTestCase {
             XCTAssertThrowsError(
                 try Declared.Injectable.Dependency(members: collector.nodes.first?.helper.members?.members)
             )
-        } catch Declared.Injectable.Dependency.Error.cannotConstructAssoicatedType {
+        } catch Declared.Injectable.Dependency.Error.cannotConstruct {
+            XCTAssert(true)
+        }
+    }
+
+    func testInitializerInjectable() throws {
+        class Collector: SyntaxVisitor {
+            var nodes = [Declared.Injectable.Initializer]()
+            var errors = [Error]()
+
+            override func visit(_ node: ClassDeclSyntax) {
+                super.visit(node)
+                addIfNeeded(node)
+            }
+
+            override func visit(_ node: EnumDeclSyntax) {
+                super.visit(node)
+                addIfNeeded(node)
+            }
+
+            override func visit(_ node: StructDeclSyntax) {
+                super.visit(node)
+                addIfNeeded(node)
+            }
+
+            private func addIfNeeded(_ node: DeclSyntax) {
+                do {
+                    if let injectable = try Declared.Injectable.Initializer(decl: node) {
+                        nodes.append(injectable)
+                    }
+                } catch {
+                    errors.append(error)
+                }
+            }
+        }
+
+        do {
+            let tempDir = try temporaryDirectory()
+            let collector = Collector()
+            collector.visit(try makeSourceSyntax("Foo.swift", in: tempDir) {
+                """
+                class User: Injectable {
+                    struct Dependency {
+                        let userId: Int
+                        let optUserId: Int?
+                        static var currentUser: User?
+                    }
+
+                    init(dependency: Dependency) {
+                        fatalError()
+                    }
+                }
+                struct User: Injectable {
+                    struct Dependency {
+                        let userId: Int
+                        let optUserId: Int?
+                        static var currentUser: User?
+                    }
+
+                    init(dependency: DIKit.Dependency) {
+                        fatalError()
+                    }
+                }
+                enum User: Injectable {
+                    struct Dependency {
+                        let userId: Int
+                        let optUserId: Int?
+                        static var currentUser: User?
+                    }
+
+                    init(dependency: Dependency) {
+                        fatalError()
+                    }
+                }
+                struct User {
+                    struct Dependency {
+                        let userId: Int
+                        let optUserId: Int?
+                        static var currentUser: User?
+                    }
+
+                    init(dependency: DIKit.Dependency) {
+                        fatalError()
+                    }
+                }
+                """
+            })
+
+            XCTAssertEqual(collector.nodes.count, 3)
+        }
+
+        do {
+            let tempDir = try temporaryDirectory()
+            let collector = Collector()
+            collector.visit(try makeSourceSyntax("Foo.swift", in: tempDir) {
+                """
+                class User: Injectable {
+                    struct Dependency {
+                        let userId: Int
+                        let optUserId: Int?
+                        static var currentUser: User?
+                    }
+                }
+
+                extension User {
+                    init(dependency: Dependency) {
+                        fatalError()
+                    }
+                }
+                """
+                })
+
+            if let error = collector.errors.first {
+                throw error
+            }
+            XCTFail()
+        } catch let error as Declared.Injectable.Initializer.Error where error.reason == .initializerNotFound {
+            XCTAssert(true)
+        }
+
+        do {
+            let tempDir = try temporaryDirectory()
+            let collector = Collector()
+            collector.visit(try makeSourceSyntax("Foo.swift", in: tempDir) {
+                """
+                class User: Injectable {}
+                """
+                })
+
+            if let error = collector.errors.first {
+                throw error
+            }
+            XCTFail()
+        } catch let error as Declared.Injectable.Initializer.Error where error.reason == .associatedTypeNotFound {
             XCTAssert(true)
         }
     }
 
     static var allTests = [
-        ("testDependency", testDependency)
+        ("testDependency", testDependency),
+        ("testInitializerInjectable", testInitializerInjectable)
     ]
 }
