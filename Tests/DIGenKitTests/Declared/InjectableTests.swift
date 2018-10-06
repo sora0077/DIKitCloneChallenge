@@ -10,6 +10,45 @@ import XCTest
 
 import SwiftSyntax
 
+private protocol InjectableTarget {
+
+    init?(decl: DeclSyntax) throws
+}
+
+extension Declared.Injectable.Initializer: InjectableTarget {}
+extension Declared.Injectable.Factory: InjectableTarget {}
+extension Declared.Injectable.Property: InjectableTarget {}
+
+private class InjectableCollector<Target: InjectableTarget>: SyntaxVisitor {
+    var nodes = [Target]()
+    var errors = [Error]()
+
+    override func visit(_ node: ClassDeclSyntax) {
+        super.visit(node)
+        addIfNeeded(node)
+    }
+
+    override func visit(_ node: EnumDeclSyntax) {
+        super.visit(node)
+        addIfNeeded(node)
+    }
+
+    override func visit(_ node: StructDeclSyntax) {
+        super.visit(node)
+        addIfNeeded(node)
+    }
+
+    private func addIfNeeded(_ node: DeclSyntax) {
+        do {
+            if let injectable = try Target(decl: node) {
+                nodes.append(injectable)
+            }
+        } catch {
+            errors.append(error)
+        }
+    }
+}
+
 final class InjectableTests: XCTestCase {
 
     func testDependency() throws {
@@ -68,39 +107,9 @@ final class InjectableTests: XCTestCase {
     }
 
     func testInitializerInjectable() throws {
-        class Collector: SyntaxVisitor {
-            var nodes = [Declared.Injectable.Initializer]()
-            var errors = [Error]()
-
-            override func visit(_ node: ClassDeclSyntax) {
-                super.visit(node)
-                addIfNeeded(node)
-            }
-
-            override func visit(_ node: EnumDeclSyntax) {
-                super.visit(node)
-                addIfNeeded(node)
-            }
-
-            override func visit(_ node: StructDeclSyntax) {
-                super.visit(node)
-                addIfNeeded(node)
-            }
-
-            private func addIfNeeded(_ node: DeclSyntax) {
-                do {
-                    if let injectable = try Declared.Injectable.Initializer(decl: node) {
-                        nodes.append(injectable)
-                    }
-                } catch {
-                    errors.append(error)
-                }
-            }
-        }
-
         do {
             let tempDir = try temporaryDirectory()
-            let collector = Collector()
+            let collector = InjectableCollector<Declared.Injectable.Initializer>()
             collector.visit(try makeSourceSyntax("Foo.swift", in: tempDir) {
                 """
                 class User: Injectable {
@@ -155,7 +164,7 @@ final class InjectableTests: XCTestCase {
 
         do {
             let tempDir = try temporaryDirectory()
-            let collector = Collector()
+            let collector = InjectableCollector<Declared.Injectable.Initializer>()
             collector.visit(try makeSourceSyntax("Foo.swift", in: tempDir) {
                 """
                 class User: Injectable {
@@ -184,7 +193,7 @@ final class InjectableTests: XCTestCase {
 
         do {
             let tempDir = try temporaryDirectory()
-            let collector = Collector()
+            let collector = InjectableCollector<Declared.Injectable.Initializer>()
             collector.visit(try makeSourceSyntax("Foo.swift", in: tempDir) {
                 """
                 class User: Injectable {}
@@ -201,39 +210,9 @@ final class InjectableTests: XCTestCase {
     }
 
     func testFactoryInjectable() throws {
-        class Collector: SyntaxVisitor {
-            var nodes = [Declared.Injectable.Factory]()
-            var errors = [Error]()
-
-            override func visit(_ node: ClassDeclSyntax) {
-                super.visit(node)
-                addIfNeeded(node)
-            }
-
-            override func visit(_ node: EnumDeclSyntax) {
-                super.visit(node)
-                addIfNeeded(node)
-            }
-
-            override func visit(_ node: StructDeclSyntax) {
-                super.visit(node)
-                addIfNeeded(node)
-            }
-
-            private func addIfNeeded(_ node: DeclSyntax) {
-                do {
-                    if let injectable = try Declared.Injectable.Factory(decl: node) {
-                        nodes.append(injectable)
-                    }
-                } catch {
-                    errors.append(error)
-                }
-            }
-        }
-
         do {
             let tempDir = try temporaryDirectory()
-            let collector = Collector()
+            let collector = InjectableCollector<Declared.Injectable.Factory>()
             collector.visit(try makeSourceSyntax("Foo.swift", in: tempDir) {
                 """
                 class User: FactoryInjectable {
@@ -288,7 +267,7 @@ final class InjectableTests: XCTestCase {
 
         do {
             let tempDir = try temporaryDirectory()
-            let collector = Collector()
+            let collector = InjectableCollector<Declared.Injectable.Factory>()
             collector.visit(try makeSourceSyntax("Foo.swift", in: tempDir) {
                 """
                 class User: FactoryInjectable {
@@ -317,7 +296,7 @@ final class InjectableTests: XCTestCase {
 
         do {
             let tempDir = try temporaryDirectory()
-            let collector = Collector()
+            let collector = InjectableCollector<Declared.Injectable.Factory>()
             collector.visit(try makeSourceSyntax("Foo.swift", in: tempDir) {
                 """
                 class User: FactoryInjectable {
@@ -344,7 +323,7 @@ final class InjectableTests: XCTestCase {
 
         do {
             let tempDir = try temporaryDirectory()
-            let collector = Collector()
+            let collector = InjectableCollector<Declared.Injectable.Factory>()
             collector.visit(try makeSourceSyntax("Foo.swift", in: tempDir) {
                 """
                 class User: FactoryInjectable {}
@@ -361,39 +340,9 @@ final class InjectableTests: XCTestCase {
     }
 
     func testPropertyInjectable() throws {
-        class Collector: SyntaxVisitor {
-            var nodes = [Declared.Injectable.Property]()
-            var errors = [Error]()
-
-            override func visit(_ node: ClassDeclSyntax) {
-                super.visit(node)
-                addIfNeeded(node)
-            }
-
-            override func visit(_ node: EnumDeclSyntax) {
-                super.visit(node)
-                addIfNeeded(node)
-            }
-
-            override func visit(_ node: StructDeclSyntax) {
-                super.visit(node)
-                addIfNeeded(node)
-            }
-
-            private func addIfNeeded(_ node: DeclSyntax) {
-                do {
-                    if let injectable = try Declared.Injectable.Property(decl: node) {
-                        nodes.append(injectable)
-                    }
-                } catch {
-                    errors.append(error)
-                }
-            }
-        }
-
         do {
             let tempDir = try temporaryDirectory()
-            let collector = Collector()
+            let collector = InjectableCollector<Declared.Injectable.Property>()
             collector.visit(try makeSourceSyntax("Foo.swift", in: tempDir) {
                 """
                 class User: PropertyInjectable {
@@ -440,7 +389,7 @@ final class InjectableTests: XCTestCase {
 
         do {
             let tempDir = try temporaryDirectory()
-            let collector = Collector()
+            let collector = InjectableCollector<Declared.Injectable.Property>()
             collector.visit(try makeSourceSyntax("Foo.swift", in: tempDir) {
                 """
                 class User: PropertyInjectable {
@@ -465,7 +414,7 @@ final class InjectableTests: XCTestCase {
 
         do {
             let tempDir = try temporaryDirectory()
-            let collector = Collector()
+            let collector = InjectableCollector<Declared.Injectable.Property>()
             collector.visit(try makeSourceSyntax("Foo.swift", in: tempDir) {
                 """
                 class User: PropertyInjectable {
@@ -490,7 +439,7 @@ final class InjectableTests: XCTestCase {
 
         do {
             let tempDir = try temporaryDirectory()
-            let collector = Collector()
+            let collector = InjectableCollector<Declared.Injectable.Property>()
             collector.visit(try makeSourceSyntax("Foo.swift", in: tempDir) {
                 """
                 class User: PropertyInjectable {
@@ -517,7 +466,7 @@ final class InjectableTests: XCTestCase {
 
         do {
             let tempDir = try temporaryDirectory()
-            let collector = Collector()
+            let collector = InjectableCollector<Declared.Injectable.Property>()
             collector.visit(try makeSourceSyntax("Foo.swift", in: tempDir) {
                 """
                 class User: PropertyInjectable {
@@ -542,7 +491,7 @@ final class InjectableTests: XCTestCase {
 
         do {
             let tempDir = try temporaryDirectory()
-            let collector = Collector()
+            let collector = InjectableCollector<Declared.Injectable.Property>()
             collector.visit(try makeSourceSyntax("Foo.swift", in: tempDir) {
                 """
                 class User: PropertyInjectable {}
