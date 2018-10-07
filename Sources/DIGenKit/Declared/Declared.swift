@@ -16,7 +16,8 @@ extension Declared {
         let name: String
         let syntax: TypeSyntax
 
-        init?(_ syntax: TypeSyntax) {
+        init?(_ syntax: TypeSyntax?) {
+            guard let syntax = syntax else { return nil }
             guard let name = syntax.helper.name?.text else { return nil }
             self.name = name + (syntax.helper.isOptional ? "?" : "")
             self.syntax = syntax

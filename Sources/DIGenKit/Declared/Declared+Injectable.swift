@@ -228,32 +228,63 @@ extension Declared.Injectable {
             case cannotConstruct
         }
 
-        let dependedTypes: [Declared.SwiftType]
+        let parameters: [(label: String, type: Declared.SwiftType)]
         let decl: StructDeclSyntax
 
         init(members: DeclListSyntax?) throws {
-            func parseMemberType(_ member: DeclSyntax) throws -> Declared.SwiftType? {
+            func parseMemberType(_ member: DeclSyntax) throws -> (String, Declared.SwiftType)? {
                 guard let member = member as? VariableDeclSyntax else { return nil }
                 if member.helper.isStatic || member.helper.isComputed { return nil }
 
                 if member.helper.hasInitializer {
                     throw Error.cannotConstruct
                 }
-                guard let type = member.bindings.lazy.compactMap({ $0.typeAnnotation?.type }).first else {
+                guard
+                    let binding = member.bindings.first,
+                    let type = Declared.SwiftType(binding.typeAnnotation?.type) else {
                     throw Error.cannotConstruct
                 }
-                return Declared.SwiftType(type)
+                return (binding.pattern.description, type)
             }
 
             switch members?.first(where: { $0.helper.identifier?.text == "Dependency" }) {
             case let dependency as StructDeclSyntax:
                 self.decl = dependency
-                self.dependedTypes = try dependency.members.members.compactMap(parseMemberType)
+                self.parameters = try dependency.members.members.compactMap(parseMemberType)
             case nil:
                 throw Error.notFound
             default:
                 throw Error.nonStructType
             }
+        }
+
+        func initializerCallExpr(_ args: [String]) -> FunctionCallExprSyntax {
+            precondition(parameters.count == args.count)
+
+            let count = args.count
+            let arguments = (0..<count).map { i -> FunctionCallArgumentSyntax in
+                let (label, _) = parameters[i]
+                let value = args[i]
+
+                return SyntaxFactory.makeFunctionCallArgument(
+                    label: SyntaxFactory.makeIdentifier(label),
+                    colon: SyntaxFactory.makeColonToken().withTrailingTrivia(.spaces(1)),
+                    expression: SyntaxFactory.makeIdentifierExpr(
+                        identifier: SyntaxFactory.makeIdentifier(value),
+                        declNameArguments: nil),
+                    trailingComma: i == count - 1
+                        ? nil : SyntaxFactory.makeCommaToken().withTrailingTrivia(.spaces(1)))
+            }
+
+            return SyntaxFactory.makeFunctionCallExpr(
+                calledExpression: SyntaxFactory.makeImplicitMemberExpr(
+                    dot: SyntaxFactory.makePrefixPeriodToken(),
+                    name: SyntaxFactory.makeIdentifier("init"),
+                    declNameArguments: nil),
+                leftParen: SyntaxFactory.makeLeftParenToken(),
+                argumentList: SyntaxFactory.makeFunctionCallArgumentList(arguments),
+                rightParen: SyntaxFactory.makeRightParenToken(),
+                trailingClosure: nil)
         }
     }
 }

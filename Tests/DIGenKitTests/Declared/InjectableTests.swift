@@ -79,7 +79,9 @@ final class InjectableTests: XCTestCase {
 
             let d = try Declared.Injectable.Dependency(members: collector.nodes.first?.helper.members?.members)
 
-            XCTAssertEqual(d.dependedTypes.map { $0.name }, ["Int", "Int?"])
+            XCTAssertEqual(d.parameters.map { $1.name }, ["Int", "Int?"])
+            XCTAssertEqual(d.initializerCallExpr(["100", "nil"]).description,
+                           ".init(userId: 100, optUserId: nil)")
         }
 
         do {
