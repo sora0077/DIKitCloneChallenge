@@ -46,7 +46,7 @@ class ResolverTests: XCTestCase {
 
         XCTAssertEqual(resolver.providedFunctions.count, 1)
         XCTAssertEqual(resolver.providedFunctions[0].methodName, "provideA")
-        XCTAssertEqual(resolver.providedFunctions[0].arguments.map { $1.name }, ["B", "C?"])
+        XCTAssertEqual(resolver.providedFunctions[0].arguments.map { $0.label }, ["B", "C?"])
         XCTAssertEqual(resolver.providedFunctions[0].returnType.name, "A")
     }
 

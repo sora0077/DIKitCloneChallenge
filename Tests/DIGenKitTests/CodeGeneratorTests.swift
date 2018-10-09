@@ -27,7 +27,6 @@ final class CodeGeneratorTests: XCTestCase {
             }
 
             private protocol TestResolver: Resolver {
-                func provideA() -> A
             }
 
             """

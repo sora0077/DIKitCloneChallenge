@@ -79,7 +79,7 @@ final class InjectableTests: XCTestCase {
 
             let d = try Declared.Injectable.Dependency(members: collector.nodes.first?.helper.members?.members)
 
-            XCTAssertEqual(d.parameters.map { $1.name }, ["Int", "Int?"])
+            XCTAssertEqual(d.parameters.map { $0.label }, ["Int", "Int?"])
             XCTAssertEqual(d.initializerCallExpr(["100", "nil"]).description,
                            ".init(userId: 100, optUserId: nil)")
         }
@@ -162,7 +162,7 @@ final class InjectableTests: XCTestCase {
             })
 
             XCTAssertEqual(collector.nodes.count, 3)
-            XCTAssertEqual(collector.nodes[0].outputType.name, "ClassUser")
+            XCTAssertEqual(collector.nodes.map { $0.outputType.name }, ["ClassUser", "StructUser", "EnumUser"])
         }
 
         do {
@@ -266,7 +266,7 @@ final class InjectableTests: XCTestCase {
                 })
 
             XCTAssertEqual(collector.nodes.count, 3)
-            XCTAssertEqual(collector.nodes[0].outputType.name, "ClassUser")
+            XCTAssertEqual(collector.nodes.map { $0.outputType.name }, ["ClassUser", "StructUser", "EnumUser"])
         }
 
         do {
@@ -389,7 +389,7 @@ final class InjectableTests: XCTestCase {
                 })
 
             XCTAssertEqual(collector.nodes.count, 3)
-            XCTAssertEqual(collector.nodes[0].outputType.name, "ClassUser")
+            XCTAssertEqual(collector.nodes.map { $0.outputType.name }, ["ClassUser", "StructUser", "EnumUser"])
         }
 
         do {

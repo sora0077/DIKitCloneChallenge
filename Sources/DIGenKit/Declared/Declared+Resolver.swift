@@ -58,7 +58,7 @@ extension Declared.Resolver {
         }
 
         let methodName: String
-        let arguments: [(label: String, type: Declared.SwiftType)]
+        let arguments: [Declared.SwiftFunction.Parameter]
         let returnType: Declared.SwiftType
 
         let decl: FunctionDeclSyntax
@@ -81,7 +81,7 @@ extension Declared.Resolver {
             self.returnType = returnType
             self.arguments = decl.signature.input.parameterList.compactMap {
                 guard let label = $0.firstName?.text, let type = Declared.SwiftType($0.type) else { return nil }
-                return (label, type)
+                return .init(label: label, type: type)
             }
         }
     }

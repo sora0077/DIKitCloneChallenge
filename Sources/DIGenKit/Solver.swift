@@ -55,15 +55,4 @@ struct Solver<Content: Hashable> {
 
         return resolved.map { ($0.target, $0.deps) }
     }
-
-//    struct Solved {
-//        let resolvedFunctions: [Declared.Resolver.ResolvedFunction]
-//    }
-//    func solve(with resolver: Declared.Resolver,
-//               andInitializerInjectables initializerInjectables: [Declared.Injectable.Initializer] = [],
-//               andFactoryInjectables factoryInjectables: [Declared.Injectable.Factory] = [],
-//               andPropertyInjectables propertyInjectables: [Declared.Injectable.Property] = []) throws -> Solved {
-//
-//        fatalError()
-//    }
 }

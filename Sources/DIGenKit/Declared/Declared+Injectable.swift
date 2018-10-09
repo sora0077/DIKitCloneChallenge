@@ -234,11 +234,11 @@ extension Declared.Injectable {
             case cannotConstruct
         }
 
-        let parameters: [(label: String, type: Declared.SwiftType)]
+        let parameters: [Declared.SwiftFunction.Parameter]
         let decl: StructDeclSyntax
 
         init(members: DeclListSyntax?) throws {
-            func parseMemberType(_ member: DeclSyntax) throws -> (String, Declared.SwiftType)? {
+            func parseMemberType(_ member: DeclSyntax) throws -> Declared.SwiftFunction.Parameter? {
                 guard let member = member as? VariableDeclSyntax else { return nil }
                 if member.helper.isStatic || member.helper.isComputed { return nil }
 
@@ -250,7 +250,7 @@ extension Declared.Injectable {
                     let type = Declared.SwiftType(binding.typeAnnotation?.type) else {
                     throw Error.cannotConstruct
                 }
-                return (binding.pattern.description, type)
+                return .init(label: binding.pattern.description, type: type)
             }
 
             switch members?.first(where: { $0.helper.identifier?.text == "Dependency" }) {
@@ -269,7 +269,7 @@ extension Declared.Injectable {
 
             let count = args.count
             let arguments = (0..<count).map { i -> FunctionCallArgumentSyntax in
-                let (label, _) = parameters[i]
+                let label = parameters[i].label
                 let value = args[i]
 
                 return SyntaxFactory.makeFunctionCallArgument(

@@ -31,6 +31,13 @@ public class CodeGenerator {
         print(collector.imports)
         print(collector.resolvers)
 
+        for resolver in collector.resolvers {
+            try solve(with: resolver,
+                      andInitializerInjectables: collector.initializers,
+                      andFactoryInjectables: collector.factories,
+                      andPropertyInjectables: collector.properties)
+        }
+
         return ""
     }
 }
@@ -79,6 +86,9 @@ private class ResolverCollectVisitor: SyntaxVisitor {
     private(set) var imports = Set<ImportDeclSyntax>()
 
     private(set) var resolvers = [Declared.Resolver]()
+    private(set) var initializers = [Declared.Injectable.Initializer]()
+    private(set) var factories = [Declared.Injectable.Factory]()
+    private(set) var properties = [Declared.Injectable.Property]()
 
     override func visit(_ node: ImportDeclSyntax) {
 
@@ -93,17 +103,17 @@ private class ResolverCollectVisitor: SyntaxVisitor {
     }
 
     override func visit(_ node: StructDeclSyntax) {
-
+        appendInjectable(node)
         super.visit(node)
     }
 
     override func visit(_ node: ClassDeclSyntax) {
-
+        appendInjectable(node)
         super.visit(node)
     }
 
     override func visit(_ node: EnumDeclSyntax) {
-
+        appendInjectable(node)
         super.visit(node)
     }
 
@@ -117,5 +127,30 @@ private class ResolverCollectVisitor: SyntaxVisitor {
         }
 
         super.visit(node)
+    }
+
+    private func appendInjectable(_ node: DeclSyntax) {
+        func record(_ body: () throws -> Void) {
+            do {
+                try body()
+            } catch {
+                diagnosticEngine.diagnose(.init(.warning, "\(error)"))
+            }
+        }
+        record {
+            if let injectable = try Declared.Injectable.Initializer(decl: node) {
+                initializers.append(injectable)
+            }
+        }
+        record {
+            if let injectable = try Declared.Injectable.Factory(decl: node) {
+                factories.append(injectable)
+            }
+        }
+        record {
+            if let injectable = try Declared.Injectable.Property(decl: node) {
+                properties.append(injectable)
+            }
+        }
     }
 }
