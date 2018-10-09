@@ -114,7 +114,7 @@ final class InjectableTests: XCTestCase {
             let collector = InjectableCollector<Declared.Injectable.Initializer>()
             collector.visit(try makeSourceSyntax("Foo.swift", in: tempDir) {
                 """
-                class User: Injectable {
+                class ClassUser: Injectable {
                     struct Dependency {
                         let userId: Int
                         let optUserId: Int?
@@ -125,7 +125,7 @@ final class InjectableTests: XCTestCase {
                         fatalError()
                     }
                 }
-                struct User: Injectable {
+                struct StructUser: Injectable {
                     struct Dependency {
                         let userId: Int
                         let optUserId: Int?
@@ -136,7 +136,7 @@ final class InjectableTests: XCTestCase {
                         fatalError()
                     }
                 }
-                enum User: Injectable {
+                enum EnumUser: Injectable {
                     struct Dependency {
                         let userId: Int
                         let optUserId: Int?
@@ -147,7 +147,7 @@ final class InjectableTests: XCTestCase {
                         fatalError()
                     }
                 }
-                struct User {
+                struct UserNotInjectable {
                     struct Dependency {
                         let userId: Int
                         let optUserId: Int?
@@ -162,6 +162,7 @@ final class InjectableTests: XCTestCase {
             })
 
             XCTAssertEqual(collector.nodes.count, 3)
+            XCTAssertEqual(collector.nodes[0].outputType.name, "ClassUser")
         }
 
         do {
@@ -217,47 +218,47 @@ final class InjectableTests: XCTestCase {
             let collector = InjectableCollector<Declared.Injectable.Factory>()
             collector.visit(try makeSourceSyntax("Foo.swift", in: tempDir) {
                 """
-                class User: FactoryInjectable {
+                class ClassUser: FactoryInjectable {
                     struct Dependency {
                         let userId: Int
                         let optUserId: Int?
                         static var currentUser: User?
                     }
 
-                    static func makeInstance(dependency: Dependency) -> User {
+                    static func makeInstance(dependency: Dependency) -> ClassUser {
                         fatalError()
                     }
                 }
-                struct User: FactoryInjectable {
+                struct StructUser: FactoryInjectable {
                     struct Dependency {
                         let userId: Int
                         let optUserId: Int?
                         static var currentUser: User?
                     }
 
-                    static func makeInstance(dependency: Dependency) -> User {
+                    static func makeInstance(dependency: Dependency) -> StructUser {
                         fatalError()
                     }
                 }
-                enum User: FactoryInjectable {
+                enum EnumUser: FactoryInjectable {
                     struct Dependency {
                         let userId: Int
                         let optUserId: Int?
                         static var currentUser: User?
                     }
 
-                    static func makeInstance(dependency: Dependency) -> User {
+                    static func makeInstance(dependency: Dependency) -> EnumUser {
                         fatalError()
                     }
                 }
-                struct User {
+                struct UserNotInjectable {
                     struct Dependency {
                         let userId: Int
                         let optUserId: Int?
                         static var currentUser: User?
                     }
 
-                    static func makeInstance(dependency: Dependency) -> User {
+                    static func makeInstance(dependency: Dependency) -> UserNotInjectable {
                         fatalError()
                     }
                 }
@@ -265,6 +266,7 @@ final class InjectableTests: XCTestCase {
                 })
 
             XCTAssertEqual(collector.nodes.count, 3)
+            XCTAssertEqual(collector.nodes[0].outputType.name, "ClassUser")
         }
 
         do {
@@ -347,7 +349,7 @@ final class InjectableTests: XCTestCase {
             let collector = InjectableCollector<Declared.Injectable.Property>()
             collector.visit(try makeSourceSyntax("Foo.swift", in: tempDir) {
                 """
-                class User: PropertyInjectable {
+                class ClassUser: PropertyInjectable {
                     struct Dependency {
                         let userId: Int
                         let optUserId: Int?
@@ -356,7 +358,7 @@ final class InjectableTests: XCTestCase {
 
                     var dependency: Dependency!
                 }
-                struct User: PropertyInjectable {
+                struct StructUser: PropertyInjectable {
                     struct Dependency {
                         let userId: Int
                         let optUserId: Int?
@@ -365,7 +367,7 @@ final class InjectableTests: XCTestCase {
 
                     var dependency: Dependency!
                 }
-                enum User: PropertyInjectable {
+                enum EnumUser: PropertyInjectable {
                     struct Dependency {
                         let userId: Int
                         let optUserId: Int?
@@ -374,7 +376,7 @@ final class InjectableTests: XCTestCase {
 
                     var dependency: Dependency!
                 }
-                struct User {
+                struct UserNotInjectable {
                     struct Dependency {
                         let userId: Int
                         let optUserId: Int?
@@ -387,6 +389,7 @@ final class InjectableTests: XCTestCase {
                 })
 
             XCTAssertEqual(collector.nodes.count, 3)
+            XCTAssertEqual(collector.nodes[0].outputType.name, "ClassUser")
         }
 
         do {

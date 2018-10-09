@@ -29,9 +29,7 @@ public class CodeGenerator {
         targetFiles.forEach(collector.visit)
 
         print(collector.imports)
-        print(collector.providers)
-
-        print(collector.extensions)
+        print(collector.resolvers)
 
         return ""
     }
@@ -80,9 +78,7 @@ private class ResolverCollectVisitor: SyntaxVisitor {
 
     private(set) var imports = Set<ImportDeclSyntax>()
 
-    private(set) var providers = Set<ProviderMethod>()
-
-    private(set) var extensions = Set<ExtensionDeclSyntax>()
+    private(set) var resolvers = [Declared.Resolver]()
 
     override func visit(_ node: ImportDeclSyntax) {
 
@@ -113,7 +109,9 @@ private class ResolverCollectVisitor: SyntaxVisitor {
 
     override func visit(_ node: ProtocolDeclSyntax) {
         do {
-            providers.formUnion(try ProviderMethod.providerMethods(in: node))
+            if let resolver = try Declared.Resolver(decl: node) {
+                resolvers.append(resolver)
+            }
         } catch {
             diagnosticEngine.diagnose(.init(.warning, "\(error)"))
         }

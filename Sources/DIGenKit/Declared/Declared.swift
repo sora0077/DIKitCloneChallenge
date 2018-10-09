@@ -23,6 +23,11 @@ extension Declared {
             self.syntax = syntax
         }
 
+        init?(_ syntax: TokenSyntax?) {
+            guard let syntax = syntax else { return nil }
+            self.init(SyntaxFactory.makeTypeIdentifier(syntax.text))
+        }
+
         func hash(into hasher: inout Hasher) {
             hasher.combine(name)
         }
@@ -30,5 +35,16 @@ extension Declared {
         static func == (lhs: SwiftType, rhs: SwiftType) -> Bool {
             return lhs.name == rhs.name
         }
+    }
+
+    struct SwiftFunction: Hashable {
+        struct Parameter: Hashable {
+            let label: String
+            let type: SwiftType
+        }
+
+        let identifier: String
+        let parameters: [Parameter]
+        let returnType: SwiftType
     }
 }

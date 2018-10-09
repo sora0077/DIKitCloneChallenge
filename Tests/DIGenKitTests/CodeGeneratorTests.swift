@@ -42,7 +42,16 @@ final class CodeGeneratorTests: XCTestCase {
         }
 
         let generator = try CodeGenerator(path: tempDir.path)
-        _ = try generator.generate()
+        XCTAssertEqual(try generator.generate(), """
+        import Foundation
+        import DIKit
+
+        extension TestResolver {
+            func resolveA() -> A {
+                return provideA()
+            }
+        }
+        """)
     }
 
     static var allTests = [

@@ -95,6 +95,7 @@ extension Declared.Injectable {
         }
 
         var dependency: Dependency { return injectable.dependency }
+        let outputType: Declared.SwiftType
         private let injectable: Declared.Injectable
 
         init?(decl: DeclSyntax) throws {
@@ -102,9 +103,10 @@ extension Declared.Injectable {
                 guard let raw = try Declared.Injectable(decl: decl, as: "Injectable") else {
                     return nil
                 }
-                guard raw.hasInitializer() else {
+                guard raw.hasInitializer(), let outputType = Declared.SwiftType(decl.helper.identifier) else {
                     throw Error(decl: decl, reason: .initializerNotFound)
                 }
+                self.outputType = outputType
                 self.injectable = raw
             } catch Dependency.Error.cannotConstruct {
                 throw Error(decl: decl, reason: .cannotConstructAssociatedType)
@@ -145,6 +147,7 @@ extension Declared.Injectable {
         }
 
         var dependency: Dependency { return injectable.dependency }
+        let outputType: Declared.SwiftType
         private let injectable: Declared.Injectable
 
         init?(decl: DeclSyntax) throws {
@@ -152,9 +155,10 @@ extension Declared.Injectable {
                 guard let raw = try Declared.Injectable(decl: decl, as: "FactoryInjectable") else {
                     return nil
                 }
-                guard raw.hasFactory() else {
+                guard raw.hasFactory(), let outputType = Declared.SwiftType(decl.helper.identifier) else {
                     throw Error(decl: decl, reason: .staticMethodNotFound)
                 }
+                self.outputType = outputType
                 self.injectable = raw
             } catch Dependency.Error.cannotConstruct {
                 throw Error(decl: decl, reason: .cannotConstructAssociatedType)
@@ -195,6 +199,7 @@ extension Declared.Injectable {
         }
 
         var dependency: Dependency { return injectable.dependency }
+        let outputType: Declared.SwiftType
         private let injectable: Declared.Injectable
 
         init?(decl: DeclSyntax) throws {
@@ -202,9 +207,10 @@ extension Declared.Injectable {
                 guard let raw = try Declared.Injectable(decl: decl, as: "PropertyInjectable") else {
                     return nil
                 }
-                guard raw.hasProperty() else {
+                guard raw.hasProperty(), let outputType = Declared.SwiftType(decl.helper.identifier) else {
                     throw Error(decl: decl, reason: .propertyNotFound)
                 }
+                self.outputType = outputType
                 self.injectable = raw
             } catch Dependency.Error.cannotConstruct {
                 throw Error(decl: decl, reason: .cannotConstructAssociatedType)
